@@ -1,0 +1,152 @@
+<% extends 'base.html' %>
+<% block body %>
+<div id="app">
+    <div id="tagnav" class="weui-navigator weui-navigator-wrapper" v-show="!show_first_level_menu">
+        <ul class="weui-navigator-list">
+            <template v-for="(menu, index) in second_level_menu">
+                <li :id="'second_menu_'+ menu.id" v-bind:class="{'weui-state-active': index==0}"
+                    v-on:click="onclick_second_level_menu(menu.id)">
+                    <a href="javascript:;">{{menu.name}}</a>
+                </li>
+            </template>
+        </ul>
+    </div>
+    <div class="weui_grids" v-show="show_first_level_menu">
+        <div v-for="menu in first_level_menu">
+            <div class="weui_grid" v-on:click="onclick_first_level_menu(menu.id)">
+                <div class="weui_grid_icon">
+                    <img :src="menu.web_icon|get_menu_ico_path" alt=""/>
+                </div>
+                <p class="weui_grid_label">{{ menu.name }}</p>
+            </div>
+        </div>
+    </div>
+    <router-view class="view" v-show="!show_first_level_menu"></router-view>
+    <div class="weui_tabbar">
+        <template v-for="menu in last_leve_menu">
+            <div v-on:click="onclick_last_level_menu( menu.action)" class="weui_tabbar_item weui_bar_item_on">
+                <div class="weui_tabbar_icon">
+                    <img :src="menu.web_icon|get_menu_ico_path">
+                </div>
+                <div class="weui_tabbar_label">{{ menu.name }}
+                </div>
+            </div>
+        </template>
+    </div>
+
+</div>
+<script type="text/x-template" id="mobile_action_view">
+    <mobileViews v-show="show_views"
+                 :all_field.sync="all_field"
+                 :all_record_data.sync="all_record_data"
+                 :show_views.sync="show_views"
+                 :field_views.sync="field_views"
+                 :view_type.sync="view_type"
+    ></mobileViews>
+</script>
+
+<script type="text/x-template" id="mobile_tree_component">
+    <div class="container">
+        <div v-show="component_view_type=='tree'&&show_views.tree">
+            <el-table
+                    :data="all_record_data" border v-show="show_views.tree" @cell-click="click_cell" height="600"
+                    style="width: 100${'%'}" @select="row_select">
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column type="expand">
+                    <template scope="props">
+                        <el-form label-position="left" inline class="demo-table-expand">
+                            <template v-for="label in show_views.tree.field">
+                                <el-form-item :label="label._string||all_field[label._name].string">
+                                    <span>{{ props.row[label._name] }}</span>
+                                </el-form-item>
+                            </template>
+                        </el-form>
+                    </template>
+                </el-table-column>
+                <template v-for="(label, index) in show_views.tree.field">
+                    <el-table-column v-if="index<3"
+                                     :label="label._string||all_field[label._name].string"
+                                     :prop="label._name">
+                    </el-table-column>
+                </template>
+                <el-table-column label="操作">
+                    <template scope="scope">
+                        <el-button
+                                size="small"
+                                @click="handleEdit(scope.$index, scope.row)">查看详情
+                        </el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </div>
+        <div v-show="component_view_type=='form'" class="page toast  preview js_show">
+            <div class="weui_cells weui_cells_form">
+                <template v-for="label in show_views.form">
+                    <div class="weui_cell">
+                        <div class="weui_cell_hd"><label class="weui_label">{{label._string||all_field[label._name].string}}</label>
+                        </div>
+                        <div class="weui_cell_bd weui_cell_primary">
+                            <template v-if="all_field[label._name].type=='char'">
+                                <el-input class="weui_input" v-model="one_record_data[label._name]"
+                                          :placeholder="label._string||all_field[label._name].string"></el-input>
+                            </template>
+                            <template v-else-if="all_field[label._name].type=='boolean'">
+                                <el-switch class="weui_input" v-model="one_record_data[label._name]"></el-switch>
+                            </template>
+                            <template
+                                    v-else-if="all_field[label._name].type=='float'||all_field[label._name].type=='integer'">
+                                <el-input-number class="weui_input" v-model="one_record_data[label._name]"
+                                                 label="label._string||all_field[label._name].string"></el-input-number>
+                            </template>
+                            <template v-else-if="all_field[label._name].type=='text'">
+                                <el-input class="weui_input"
+                                          type="textarea"
+                                          :rows="2"
+                                          :placeholder="label._string||all_field[label._name].string"
+                                          v-model="one_record_data[label._name]">
+                                </el-input>
+                            </template>
+                            <template v-else-if="['datetime', 'date'].indexOf(all_field[label._name].type)>=0">
+                                <el-date-picker class="weui_input"
+                                                v-model="one_record_data[label._name]"
+                                                type="datetime"
+                                                :placeholder="label._string||all_field[label._name].string">
+                                </el-date-picker>
+                            </template>
+                            <template v-else-if="['many2one'].indexOf(all_field[label._name].type)>=0">
+                                <template v-show="one_record_data[label._name]">
+                                    <el-input class="weui_input" v-model="one_record_data[label._name]"
+                                              :placeholder="label._string||all_field[label._name].string"></el-input>
+                                </template>
+                            </template>
+                            <template v-else-if="['many2one', 'selection'].indexOf(all_field[label._name].type)>=0">
+                                <el-select v-model="one_record_data[label._name]" placeholder="请选择"
+                                           class="weui_input">
+                                    <el-option
+                                            v-for="item in all_field[label._name].selection"
+                                            :key="item[0]"
+                                            :label="item[1]"
+                                            :value="item[0]">
+                                    </el-option>
+                                </el-select>
+                            </template>
+                            <template v-else-if="['one2many', ''].indexOf(all_field[label._name].type)>=0">
+                            </template>
+
+                            <template v-else>
+                                {{all_field[label._name]}}
+                                {{one_record_data[label._name]}}
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/javascript" src="/dingding/static/src/js/odoo_mobile.js?v=0.000091"></script>
+<% endblock %>

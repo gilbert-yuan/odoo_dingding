@@ -1,0 +1,82 @@
+<% extends 'base.html' %>
+<% block body %>
+<div id="app">
+    <div class="weui_tab">
+        <div class="weui_navbar">
+        </div>
+        <div class="container">
+            <router-view></router-view>
+        </div>
+    </div>
+</div>
+<script type="text/x-template" id="vue_list_view">
+    <el-table :data="all_records" style="width: 500px;">
+        <el-table-column type="expand">
+            <template scope="props">
+                <el-form label-position="left" inline class="demo-table-expand">
+                    <template v-for="lable in all_label">
+                        <el-form-item :label="lable.name">
+                            <span>{{ props.row[lable.prop] }}</span>
+                        </el-form-item>
+                    </template>
+                </el-form>
+            </template>
+        </el-table-column>
+
+        <el-table-column>
+            <template scope="props">
+                <el-form label-position="left" inline class="demo-table-expand">
+                    <template v-for="lable in all_label">
+                        <template v-if="!lable.invisible">
+                            <el-form-item :label="lable.name">
+                                <span>{{ props.row[lable.prop] }}</span>
+                            </el-form-item>
+                        </template>
+
+                    </template>
+                </el-form>
+            </template>
+        </el-table-column>
+
+    </el-table>
+</script>
+
+<script type="text/x-template" id="vue_grid">
+    <div class="weui-grids">
+        <div v-for="grid in all_grid">
+            <router-link class="weui-grid" :to="grid.link">
+                <div class="weui-grid__icon">
+                    <img :src="grid.img_src" alt=""/>
+                </div>
+                <p class="weui-grid__label">{{ grid.show_str }}</p>
+            </router-link>
+        </div>
+    </div>
+</script>
+<script type="text/javascript" src="/dingding/static/src/js/dingding_setting.js?v=400000000006"></script>
+<% endblock %>
+
+  <!--  <el-table :data="all_record_data" style="width: 500px;">
+          <el-table-column type="expand">
+              <template scope="props">
+                  <el-form label-position="left" inline class="demo-table-expand">
+                      <template v-for="label in show_views.tree.field">
+                          <el-form-item :label="label._name">
+                              <span>{{ props.row[lable.prop] }}</span>
+                          </el-form-item>
+                      </template>
+                  </el-form>
+              </template>
+          </el-table-column>
+          <el-table-column>
+              <template scope="props">
+                  <el-form label-position="left" inline class="demo-table-expand">
+                      <template v-for="label in show_views.tree.field">
+                          <el-form-item :label="label._name">
+                              <span>{{ props.row[label.name] }}</span>
+                          </el-form-item>
+                      </template>
+                  </el-form>
+              </template>
+          </el-table-column>
+      </el-table>-->

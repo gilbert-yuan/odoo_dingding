@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+	<data>
+        <record id="view_users_form_dingding" model="ir.ui.view">
+            <field name="name">company.form</field>
+            <field name="model">res.users</field>
+            <field name='inherit_id' ref='base.view_users_form' />
+            <field name="arch" type="xml">
+                <field name='partner_id' position='attributes'>
+                    <attribute name="groups"></attribute>
+                </field>
+            	<field name='partner_id' position='after'>
+            		<field name='have_dingding_account' />
+            	</field>
+            </field>
+        </record>
+
+          <record id="view_partner_form_dingding" model="ir.ui.view">
+            <field name="name">res.partner.form</field>
+            <field name="model">res.partner</field>
+            <field name='inherit_id' ref='base.view_partner_form' />
+            <field name="arch" type="xml">
+            	<field name='category_id' position='after'>
+            		<field name='department_id' />
+            	</field>
+            </field>
+        </record>
+    </data>
+</openerp>

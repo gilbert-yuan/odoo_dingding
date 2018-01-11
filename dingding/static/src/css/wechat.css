@@ -1,0 +1,54 @@
+@charset "utf-8";
+
+.aas-mui-table-view-title{
+    margin: 20px 15px 7px;
+    color: #6d6d72;
+    font-size: 15px;
+}
+
+input.aas-error{
+    border: 1px solid red;
+}
+
+.mui-search.mui-active:before{
+    font-size: 20px;
+    right: auto;
+    left: 5px;
+    display: block;
+    margin-right: 0;
+    top:24px;
+}
+
+.aas-header{
+    height:120px;
+    line-height: 120px;
+    text-align: center;
+    margin: 10px 0;
+}
+
+.aas-header-avatar{
+    height: 100px;
+    line-height: 100px;
+    display: block;
+    text-align: center;
+}
+
+.aas-header-avatar img{
+    width: 100px;
+    height: 100px;
+}
+
+.aas-header-content{
+    height: 20px;
+    line-height: 20px;
+    display: block;
+    text-align: center;
+}
+
+.aas-ul{
+    margin-bottom: 30px;
+}
+
+.aas-btn{
+    height: 60px;
+}
