@@ -7,23 +7,14 @@ import time
 import json
 import datetime
 from odoo.exceptions import UserError
-import hashlib
-import urllib
-import simplejson
 
-# 这个设置可以去除 urllib3的不必要的 warning
 requests.packages.urllib3.disable_warnings()
-
 DEFAULT_SERVER_DATE_FORMAT = "%Y-%m-%d"
 DEFAULT_SERVER_TIME_FORMAT = "%H:%M:%S"
 DEFAULT_SERVER_DATETIME_FORMAT = "%s %s" % (
     DEFAULT_SERVER_DATE_FORMAT,
     DEFAULT_SERVER_TIME_FORMAT)
-
-"""
-单例模式 的其中一种写法
-"""
-
+import aip
 
 class Singleton(object):
     def __init__(cls, name, bases, dict):
@@ -36,118 +27,22 @@ class Singleton(object):
         return cls._instance
 
 
-# class DingSNS(Singleton):
-#         # 详细文档见 https://open-doc.dingtalk.com/docs/doc.htm?spm=a219a.7629140.0.0.USEUsY&treeId=168&articleId=104881&docType=1
-#     def __init__(self, appid, appsecret):  # 初始化的时候需要获取corpid和corpsecret，
-#         self._app_id = appid
-#         self._appsecret = appsecret
-#         self._header = {'Content-Type': 'application/json'}  # 全局固定用的 请求的 header 个别的不一样要单独写
-#         self.url_get_token_for_sns = "https://oapi.dingtalk.com/sns/gettoken" # 普通钉钉用户账号开放及免登 所用到的token ?appid=APPID&appsecret=APPSECRET
-#         self.url_get_persistent_code_for_sns = "https://oapi.dingtalk.com/sns/get_persistent_code" # ?access_token=ACCESS_TOKEN"
-#         self.url_get_snstoken = "https://oapi.dingtalk.com/sns/get_sns_token" # ?access_token=ACCESS_TOKEN 获取持久授权码后方可使用此方法
-#         self.url_get_userinfo = "https://oapi.dingtalk.com/sns/getuserinfo" #?sns_token=SNS_TOKEN
-#         self._token_for_sns = self.get_token_for_sns()
-#         self._persistent_code = self.get_persistent_code_for_sns()
-#         self._snstoken = self.get_snstoken()
-#
-#         # http请求微信验证后再跳转回来
-#     def oauth_authorize_redirect_url(self, db_name, redirect_uri, state_params):
-#             state = {'db': db_name, 'agentid': self.APP_ID or 0}
-#             state.update(state_params)
-#             string_state = '(' + simplejson.dumps(state)[1:-1] + ')'
-#             if redirect_uri and not redirect_uri.startswith('http'):
-#                 redirect_uri = 'http://' + redirect_uri
-#             if not self.CORP_ID:
-#                 raise Exception("当前WxApplication实例没有self.CORP_ID, ")
-#             url = self.authorize_url(redirect_uri, state=string_state)
-#             # url = "%s?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_base&state=(%s)#wechat_redirect" % (validation_endpoint, self.CORP_ID, redirect_uri, string_state)
-#             print '------ wechat_redirect url:', redirect_uri
-#             return redirect_uri
-#
-#     # OAuth2 https://oapi.dingtalk.com/connect/oauth2/sns_authorize?appid=APPID&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=REDIRECT_URI
-#     @classmethod
-#     def authorize_url(self, redirect_uri, response_type='code',
-#                       scope='snsapi_login', state=None):
-#             # 变态的微信实现，参数的顺序也有讲究。。艹！这个实现太恶心，太恶心！
-#             rd_uri = urllib.urlencode({'redirect_uri': redirect_uri})
-#             url = 'https://oapi.dingtalk.com/connect/oauth2/sns_authorize?'
-#             url += 'appid=%s&' % self._app_id
-#
-#             url += '&response_type=' + response_type
-#             url += '&scope=' + scope
-#             url += rd_uri
-#             if state:
-#                 url += '&state=' + state
-#             return url
-#
-#     def get_token_for_sns(self):
-#         #appid = APPID & appsecret = APPSECRET
-#         res = requests.get(self.url_get_token_for_sns,
-#                            headers=self._header,
-#                            params={'appid': self._app_id,
-#                                    'appsecret': self._appsecret})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_persistent_code_for_sns(self):
-#         res = requests.get(self.url_get_persistent_code_for_sns,
-#                            headers=self._header,
-#                            params={'sccess_token': self._token_for_sns})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_snstoken(self):
-#         res = requests.get(self.url_get_snstoken,
-#                            headers=self._header,
-#                            params={'sccess_token': self._token_for_sns})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_userinfo(self):
-#         res = requests.get(self.url_get_userinfo,
-#                            headers=self._header,
-#                            params={'sccess_token': self._snstoken})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def __raise_error(self, res):
-#         """
-#         弹出事件返回的报错信息
-#         :param res:
-#         :return:
-#         """
-#         raise UserError(u'错误代码: %s,详细错误信息: %s' % (res.json()['errcode'],
-#                                                   res.json()['errmsg']))
-
-
-# 所有的回调事件
-# 'user_add_org', 'user_modify_org', 'user_leave_org','org_admin_add', 'org_admin_remove', 'org_dept_create',
-# 'org_dept_modify', 'org_dept_remove', 'org_remove','label_user_change', 'label_conf_add', 'label_conf_modify',
-# 'label_conf_del','org_change', 'chat_add_member', 'chat_remove_member', 'chat_quit', 'chat_update_owner',
-# 'chat_update_title', 'chat_disband', 'chat_disband_microapp','check_in','bpms_task_change','bpms_instance_change'
 class Dingtalk(Singleton):
+
     def __init__(self, corpid, corpsecret,
                  agent_id, token={}):  # 初始化的时候需要获取corpid和corpsecret，
         # 需要从管理后台获取 , corpid, corpsecret, agent_id
         self.__params = {
-            'corpid': corpid,
+            'corpid': corpid,  # 'ding95b28951cc12e7d835c2f4657eb6378f' ,
+            # #ding95b28951cc12e7d835c2f4657eb6378f
             'corpsecret': corpsecret,
+            # mYZM01r9Zj3lMj2x5KdBMcA0v842pP6_GIw_FNNolc1zCujCUzA4eUyuLYflp7CT
         }
         self.token_dict = {
-            'access_token': token.get('access_token')
-        }
-        self._header = {'Content-Type': 'application/json'}  # 全局固定用的 请求的 header 个别的不一样要单独写
+                           'access_token': token.get('access_token')
+                          }
+        self._header = {'content-type': 'application/json'}
         self._agent_id = agent_id,
-
-        self._url_jsapi_ticket = 'https://oapi.dingtalk.com/get_jsapi_ticket'
         self.url_get_token = 'https://oapi.dingtalk.com/gettoken'
         self.get_sso_token = 'https://oapi.dingtalk.com/sso/gettoken'
         self.url_get_dept_list = 'https://oapi.dingtalk.com/department/list'
@@ -163,110 +58,18 @@ class Dingtalk(Singleton):
         self.url_update_user = 'https://oapi.dingtalk.com/user/update'
         self.url_user_list = 'https://oapi.dingtalk.com/user/list'
         self.url_get_user_count = 'https://oapi.dingtalk.com/user/get_org_user_count'
-
+        self.isv_common_url = 'https://eco.taobao.com/router/rest'
+        self.isv_common_header = {'Content-Type': 'application/x-www-form-urlencoded',
+                                  'charset': 'utf-8'}
         self.url_delete_user = 'https://oapi.dingtalk.com/user/delete'
-        self.url_register_call_back_interface = "https://oapi.dingtalk.com/call_back/register_call_back"
-        self.url_update_call_back_interface = "https://oapi.dingtalk.com/call_back/update_call_back"
-        self.url_delete_call_back_interface = "https://oapi.dingtalk.com/call_back/delete_call_back"
-        self.url_checkout_call_back_interface = "https://oapi.dingtalk.com/call_back/get_call_back"
-        self.url_get_call_fail_record = 'https://oapi.dingtalk.com/call_back/get_call_back_failed_result'
-
-        self.approver_common_url = 'https://eco.taobao.com/router/rest'
-        self.approver_common_header = {'Content-Type': 'application/x-www-form-urlencoded',
-                                       'charset': 'utf-8'}
-        self.method_approver_create_processinstance = 'dingtalk.smartwork.bpms.processinstance.create'
-
-    def get_call_fail_record(self):
-        res = requests.get(self.url_get_call_fail_record,
-                           headers=self._header,
-                           params=self.token_dict)
-        try:
-            return res.json()
-        except:
-            self.__raise_error(res)
-
-    def delete_call_back_interface(self):
-        """
-        删除回调接口 链接 :return:
-        """
-        res = requests.get(self.url_delete_call_back_interface,
-                           headers=self._header,
-                           params=self.token_dict)
-        try:
-            return res.json()['errcode']
-        except:
-            self.__raise_error(res)
-
-    def update_call_back_interface(self, token, aes_key, url, call_back_tags):
-        """
-            更新回调接口 链接 :return:
-        """
-        data = {
-            "call_back_tag": call_back_tags,
-            "token": token,
-            "aes_key": aes_key,
-            "url": url
-        }
-        res = requests.post(self.url_update_call_back_interface,
-                            headers=self._header,
-                            params=self.token_dict,
-                            data=json.dumps(data))
-        try:
-            return res.json()['errcode']
-        except:
-            self.__raise_error(res)
-
-    def register_call_back_interface(self, token, aes_key, url, call_back_tags):
-        """
-        注册回调接口
-        :param token: 在钉钉模型上的 token 随机填写
-        :param aes_key:  在钉钉模型上的 aes_key 随机生成的 43位 aes_key
-        :param url:  ‘填写要回调的URL   地址’
-        :param call_back_tags: ‘填写要回调的 事件’
-        :return:
-        """
-        data = {
-            "call_back_tag": call_back_tags,
-            "token": token,
-            "aes_key": aes_key,
-            "url": url
-        }
-        res = requests.post(self.url_register_call_back_interface,
-                            headers=self._header,
-                            params=self.token_dict,
-                            data=json.dumps(data))
-        try:
-            return res.json()['errcode']
-        except:
-            self.__raise_error(res)
-
-    def checkout_call_back_interface(self):
-        """
-        检查是否回调事件注册成功
-        :return:
-        """
-        res = requests.get(self.url_checkout_call_back_interface,
-                           headers=self._header,
-                           params=self.token_dict)
-        print res.json()
-        try:
-            return res.json()['errcode']
-        except:
-            self.__raise_error(res)
 
     def __raise_error(self, res):
-        """
-        弹出事件返回的报错信息
-        :param res:
-        :return:
-        """
         raise UserError(u'错误代码: %s,详细错误信息: %s' % (res.json()['errcode'], res.json()['errmsg']))
+        global senderr
+        sendstatus = False
+        senderr = 'error code: %s,error message: %s' % (res.json()['errcode'], res.json()['errmsg'])
 
     def get_token(self):
-        """
-        获取大部分时间的token(有的事件链接还要单独获取不同的token)
-        :return: token 并取得token 获取token的时间
-        """
         res = requests.get(self.url_get_token, headers=self._header, params=self.__params)
         try:
             token_vals = res.json()
@@ -287,11 +90,6 @@ class Dingtalk(Singleton):
         return common_param
 
     def delete_user(self, user_id):
-        """
-        删除用户
-        :param user_id:
-        :return:
-        """
         params = self.token_dict
         params.update({'userid': user_id})
         res = requests.get(self.url_delete_user, params=params)
@@ -300,12 +98,9 @@ class Dingtalk(Singleton):
         except:
             self.__raise_error(res)
 
+
+
     def create_user(self, user_vals):
-        """
-        新建用户
-        :param user_vals:
-        :return:
-        """
         res = requests.post(self.url_create_user,
                             headers=self._header,
                             params=self.token_dict,
@@ -316,25 +111,17 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def update_user(self, user_vals):
-        """
-        更新用户信息
-        :param user_vals:
-        :return:
-        """
+        print user_vals
         res = requests.post(self.url_update_user,
                             params=self.token_dict,
                             data=json.dumps(user_vals))
+        print res.json(),"==========="
         try:
             return res.json()['errmsg']
         except:
             self.__raise_error(res)
 
     def update_dept(self, dept_vals):
-        """
-        更新部门的信息
-        :param dept_vals:
-        :return:
-        """
         res = requests.post(self.url_update_dept,
                             params=self.token_dict,
                             data=json.dumps(dept_vals))
@@ -344,10 +131,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def get_dept_list(self):
-        """
-        获取部门列表
-        :return:
-        """
         res = requests.get(self.url_get_dept_list,
                            params=self.token_dict)
         try:
@@ -356,11 +139,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def get_depatment_user_list(self, department_id):
-        """
-        获取部门的 用户列表
-        :param department_id:
-        :return:
-        """
         params = self.token_dict
         params.update({'department_id': department_id})
         res = requests.get(self.url_user_list,
@@ -371,11 +149,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def get_dept_detail(self, dept_id):
-        """
-        获取部门的详细情况
-        :param dept_id:
-        :return:
-        """
         params = self.token_dict
         params.update({'id': dept_id})
         res = requests.get(self.url_get_dept_detail,
@@ -386,14 +159,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def create_dept(self, name, parentid, orderid, createdeptgroup=True):
-        """
-        创建新的部门
-        :param name:
-        :param parentid:
-        :param orderid:
-        :param createdeptgroup:
-        :return:
-        """
         payload = {
             'name': name,
             'parentid': parentid or '1',
@@ -410,11 +175,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def delete_dept(self, dept_id):
-        """
-        删除部门
-        :param dept_id:
-        :return:
-        """
         params = self.token_dict
         params.update({'id': dept_id})
         res = requests.get(self.url_delete_dept, params=params)
@@ -424,11 +184,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def get_userid_by_unionid(self, unionid):
-        """
-        获取用户详细情况 通过 unionid
-        :param unionid:
-        :return:
-        """
         params = self.token_dict
         params.update({'unionid': unionid})
         res = requests.get(self.url_get_user_id_by_unionid, params=params)
@@ -436,49 +191,6 @@ class Dingtalk(Singleton):
             return res.json()['userid']
         except:
             self.__raise_error(res)
-
-    def get_js_api_ticket(self):
-        """
-        获取 jsapi 的访问 票据
-        :return:
-        """
-        res = requests.get(self._url_jsapi_ticket, params=self.token_dict)
-        try:
-            return res.json()['ticket']
-        except:
-            self.__raise_error(res)
-
-    def get_signature(self, vals={}):
-        """
-        对jsapi 参数进行处理获取 对应参数的 signature
-        :param vals:
-        :return:
-        """
-        sorted_vals = sorted(vals.items(), lambda x, y: cmp(x[1], y[1]))
-        url_vals = urllib.urlencode(sorted_vals)
-        signature = hashlib.sha1(url_vals).hexdigest()  # sha 加密
-        return signature
-
-    def get_js_api_params(self, url, nonceStr):
-        """
-        处理 数据 去的 jsapi 需要的 各种参数
-        :param url:
-        :param nonceStr:
-        :return: 返回各种需要的参数 在 jsapi 中
-        """
-        jsapi_ticket = self.get_js_api_ticket()
-        timestamp = int(time.time())
-        signature_vals = {
-            'noncestr': nonceStr,
-            'jsapi_ticket': jsapi_ticket,
-            'url': url,
-            'timestamp': timestamp,
-        }
-        signature = self.get_signature(signature_vals)
-        try:
-            return signature, timestamp, nonceStr
-        except:
-            self.__raise_error({"error": u'错误！'})
 
     def get_user_detail(self, userid):
         params = self.token_dict
@@ -490,11 +202,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def remove_False_vals(self, dict_vals={}):
-        """
-        取出没有修改的地方的内容
-        :param dict_vals:
-        :return:
-        """
         keys = [key for key, vals in dict_vals.iteritems() if not dict_vals.get(key)]
         for key in keys:
             del dict_vals[key]
@@ -502,15 +209,6 @@ class Dingtalk(Singleton):
 
     def send_message(self, messages, userid_list='', dept_id_list='',
                      msgtype='text', to_all_user='false'):
-        """
-        发送消息
-        :param messages: 消息体内容
-        :param userid_list: 接受消息的用户列表
-        :param dept_id_list: 接受消息的部门列表
-        :param msgtype: 消息的类型
-        :param to_all_user: 是否发送给每一个人
-        :return:
-        """
         payload = {
             'agent_id': self._agent_id[0],
             "msgtype": msgtype,
@@ -536,11 +234,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def get_user_count(self, only_active=0):
-        """
-        获取 用户的
-        :param only_active:
-        :return:
-        """
         params = self.token_dict
         params.update({'onlyActive': only_active})
         res = requests.get(self.url_get_user_count, params=params)
@@ -550,14 +243,6 @@ class Dingtalk(Singleton):
             self.__raise_error(res)
 
     def send_oa_message(self, message, userid_list='', dept_id_list='', to_all_user='false'):
-        """
-        发送 固定格式的消息的一个格式的设定
-        :param message:
-        :param userid_list:
-        :param dept_id_list:
-        :param to_all_user:
-        :return:
-        """
         message = {"message_url": message.get("message_url"),
                    "head": {"bgcolor": message.get('bgcolor'),
                             "text": message.get('head')},
@@ -583,135 +268,8 @@ class Dingtalk(Singleton):
         return True
 
     def send_text_message(self, message, userid_list, dept_id_list):
-        """
-        发送普通消息的 简化参数
-        :param message: 消息内容
-        :param userid_list: 发送用户 列表
-        :param dept_id_list: 发送部门的列表
-        :return:
-        """
         self.send_message({"content": message},
                           userid_list=userid_list,
                           dept_id_list=dept_id_list,
                           msgtype='text', )
         return True
-
-    def create_new_approver(self, vals):
-        print json.dumps(vals)
-        vals.update(self.get_common_param(self.method_approver_create_processinstance))
-        res = requests.post(self.approver_common_url,
-                            headers=self.approver_common_header,
-                            params=vals)
-        all_response = res.json()['dingtalk_smartwork_bpms_processinstance_create_response']
-        if all_response.get('result').get('is_success'):
-            return True
-        else:
-            raise UserError(all_response.get('result').get('error_msg'))
-
-
-jsApiList = ['device.notification.alert',
-             'device.notification.confirm',
-             'device.notification.prompt',
-             'device.notification.vibrate',
-             'device.accelerometer.watchShake',
-             'device.accelerometer.clearShake',
-             'device.notification.toast',
-             'device.notification.actionSheet',
-             'device.notification.showPreloader',
-             'device.notification.hidePreloader',
-             'biz.navigation.setLeft',
-             'biz.navigation.setRight',
-             'biz.navigation.setTitle',
-             'device.connection.getNetworkType',
-             'biz.util.openLink',
-             'biz.util.datepicker',
-             'biz.util.timepicker',
-             'biz.util.datetimepicker',
-             'biz.navigation.goBack',
-             'biz.navigation.close',
-             'biz.navigation.setMenu',
-             'biz.navigation.replace',
-             'biz.util.previewImage',
-             'biz.util.chosen',
-             'ui.input.plain',
-             'ui.progressBar.setColors',
-             'ui.pullToRefresh.enable',
-             'ui.pullToRefresh.disable',
-             'ui.pullToRefresh.stop',
-             'ui.webViewBounce.disable',
-             'ui.webViewBounce.enable',
-             'runtime.permission.requestAuthCode',
-             'device.notification.modal',
-             'biz.util.scan',
-             'biz.navigation.setIcon',
-             'ui.nav.preload',
-             'ui.nav.go',
-             'ui.nav.recycle',
-             'ui.nav.getCurrentId',
-             'ui.nav.close',
-             'ui.nav.backTo',
-             'ui.nav.push',
-             'ui.nav.pop',
-             'ui.nav.quit',
-             'device.base.getSettings',
-             'device.nfc.nfcRead',
-             'util.domainStorage.setItem',
-             'util.domainStorage.getItem',
-             'util.domainStorage.removeItem',
-             'service.request.httpOverLwp',
-             'device.geolocation.get',
-             'device.base.getUUID',
-             'device.base.getInterface',
-             'device.launcher.checkInstalledApps',
-             'device.launcher.launchApp',
-             'biz.util.open',
-             'biz.util.share',
-             'biz.contact.choose',
-             'biz.user.get',
-             'biz.util.uploadImage',
-             'biz.ding.post',
-             'biz.telephone.call',
-             'biz.telephone.showCallMenu',
-             'biz.chat.chooseConversation',
-             'biz.contact.createGroup',
-             'biz.map.locate',
-             'biz.map.search',
-             'biz.map.view',
-             'device.geolocation.openGps',
-             'biz.util.uploadImageFromCamera',
-             'biz.customContact.multipleChoose',
-             'biz.customContact.choose',
-             'biz.contact.complexPicker',
-             'biz.contact.departmentsPicker',
-             'biz.contact.setRule',
-             'biz.contact.externalComplexPicker',
-             'biz.contact.externalEditForm',
-             'biz.chat.pickConversation',
-             'biz.chat.chooseConversationByCorpId',
-             'biz.chat.openSingleChat',
-             'biz.chat.toConversation',
-             'biz.cspace.saveFile',
-             'biz.cspace.preview',
-             'biz.cspace.chooseSpaceDir',
-             'biz.util.uploadAttachment',
-             'biz.clipboardData.setData',
-             'biz.intent.fetchData',
-             'biz.chat.locationChatMessage',
-             'device.audio.startRecord',
-             'device.audio.stopRecord',
-             'device.audio.onRecordEnd',
-             'device.audio.download',
-             'device.audio.play',
-             'device.audio.pause',
-             'device.audio.resume',
-             'device.audio.stop',
-             'device.audio.onPlayEnd',
-             'device.audio.translateVoice',
-             'biz.util.fetchImageData',
-             'biz.alipay.auth',
-             'biz.alipay.pay',
-             'device.nfc.nfcWrite',
-             'biz.util.encrypt',
-             'biz.util.decrypt',
-             'runtime.permission.requestOperateAuthCode',
-             'biz.util.scanCard', ]
