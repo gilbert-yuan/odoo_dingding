@@ -119,7 +119,7 @@
         <record id='ding_ding_xml' model="ding.ding">
             <field name="name">odootest</field>
             <field name="corpid">ding95b28951cc12e7d835c2f4657eb6378f</field>
-            <field name="corpsecret">mYZM01r9Zj3lMj2x5KdBMcA0v842pP6_GIw_FNNolc1zCujCUzA4eUyuLYflp7CT</field>
+            <field name="corpsecret">mYZM01r9Zj3lMj2x5KdBMcA0v842pP6_GIw_FNNolc1zCujCUzA4eUyuLYflp9</field>
         </record>
 
         <record id='ding_agent_xml' model="ding.agent">
