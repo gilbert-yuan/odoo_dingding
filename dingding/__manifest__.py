@@ -6,9 +6,11 @@
     'summary': 'odoo中钉钉的嵌入使用',
     'category': 'dingding',
     'sequence': 10,
-    'description':'''''',
+    'description': '''''',
     'depends': ['web'],
-    'data':['ding_model.xml',
-            'res_users.xml'],
+    'data':
+        ['ding_model.xml',
+         'res_users.xml',
+         ],
     'application': True,
 }

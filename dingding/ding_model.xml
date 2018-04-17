@@ -20,7 +20,14 @@
                 <form string="钉钉">
                     <header>
                          <button name="get_ding_department" type="object" class="oe_highlight" string="获取钉钉部门"/>
-                         <button name="get_ding_user" type="object" class="oe_highlight" string="获取钉钉用户"/>
+                         <button name="get_dingdinguser" type="object" class="oe_highlight" string="获取钉钉用户"/>
+                         <button name="register_call_back_interface" type="object" class="oe_highlight" string="注册回调接口"/>
+                         <button name="checkout_call_back_interface" type="object" class="oe_highlight" string="验证回调接口"/>
+                         <button name="update_call_back_interface" type="object" class="oe_highlight" string="更新回调接口"/>
+                         <button name="delete_call_back_interface" type="object" class="oe_highlight" string="删除回调接口"/>
+                         <button name="get_call_fail_record" type="object" class="oe_highlight" string="获取失败的回调"/>
+                         <button name="create_new_approver" type="object" class="oe_highlight" string="发起审批实例"/>
+
                     </header>
                     <group>
                         <field name="name"/>
@@ -34,6 +41,11 @@
                         </field>
                         <field name='token'/>
                         <field name='expired_in'/>
+                        <field name='aes_key1'/>
+                        <field name='random_token'/>
+                        <field name='call_back_url'/>
+                        <field name='call_back_tags'/>
+                        <field name='is_ok_call_back_url'/>
                     </group>
                 </form>
             </field>
