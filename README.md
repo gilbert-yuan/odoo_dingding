@@ -14,17 +14,25 @@ odoo10 对接钉钉部分功能
 ```json
 {"id": 622213306, "jsonrpc": "2.0", "result": [{"type": "ir.actions.server", "link_field_id": false, "name": "\u5b9a\u65f6\u83b7\u53d6\u6700\u65b0\u4ea7\u54c1\u4fe1\u606f", "active": false, "numbercall": -1, "channel_ids": [], "interval_number": 10, "model_id": [113, "\u8bfb\u53d6\u4eac\u4e1c\u7684\u4ea7\u54c1\u5206\u7c7b\u8bb0\u5f55\u4e0b\u6765\uff0c\u7136\u540e\u8fdb\u884c\u548c\u4ea7\u54c1\u7684\u5173\u8054\uff0c\u5206\u7c7bID\u548c\u4eac\u4e1c\u4e00\u81f4"], "doall": false, "model_name": "jd.category", "id": 15, "fields_lines": [], "priority": 8, "child_ids": [], "interval_type": "minutes", "template_id": false, "crud_model_id": false, "crud_model_name": false, "nextcall": "2018-03-15 02:56:20", "code": "model.all_search_and_write_new_info('all')", "display_name": "\u5b9a\u65f6\u83b7\u53d6\u6700\u65b0\u4ea7\u54c1\u4fe1\u606f", "user_id": [1, "Administrator"], "state": "code", "partner_ids": [], "binding_model_id": false}]}
 ```
-这样的结果而钉钉不能识别odoo的这种格式所以 要继承下面方法 把这一层包装去掉。
+这样的结果而钉钉不能识别odoo的这种格式所以 要继承下面方法 把这一层包装去掉。 （测试临时修改，如需正式环境使用请用继承方式) 直接替换掉系统中这个方法
 ```python
- def _json_response(self, result=None, error=None):
+ 
+    def _json_response(self, result=None, error=None):
         response = {
             'jsonrpc': '2.0',
             'id': self.jsonrequest.get('id')
             }
+        if result and isinstance(result, dict)and result.get('msg_signature'):
+            mime = 'application/json'
+            body = json.dumps(result)
+            return Response(
+                body, headers=[('Content-Type', mime),
+                               ('Content-Length', len(body))])
         if error is not None:
             response['error'] = error
         if result is not None:
             response['result'] = result
+
         if self.jsonp:
             # If we use jsonp, that's mean we are called from another host
             # Some browser (IE and Safari) do no allow third party cookies
@@ -35,6 +43,7 @@ odoo10 对接钉钉部分功能
         else:
             mime = 'application/json'
             body = json.dumps(response)
+
         return Response(
                     body, headers=[('Content-Type', mime),
                                    ('Content-Length', len(body))])
