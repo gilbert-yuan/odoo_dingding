@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import http
 from odoo.http import HttpRequest, request
-from odoo.addons.dingding.dingtalk_crypto import DingTalkCrypto
+from odoo.addons.dingding.dingtalk_crypto.crypto import DingTalkCrypto
 import os
 import sys
 import jinja2
@@ -105,14 +105,17 @@ class PageShow(http.Controller):
         menu_rows = request.env['ir.ui.menu'].sudo().search_read([('parent_id', '=', menu_id), ('action', '!=', False)])
         return request.make_response(simplejson.dumps(menu_rows))
 
-    @http.route('/dingding/callbackurl', auth='none', type="json", csrf=False)
+    @http.route('/dingding/call_back_url', auth='none', type="json", csrf=False)
     def dingding_call_back(self, **args):
         ding_rows = request.env['ding.ding'].sudo().search([])
         dingcrypto = DingTalkCrypto(ding_rows[0].aes_key1, str(ding_rows[0].random_token), str(ding_rows[0].corpid))
         rand_str, length, msg, key = dingcrypto.decrypt(request.jsonrequest.get('encrypt'))
-        ding_rows.handler_map().get(safe_eval(msg).get('EventType'), None)(safe_eval(msg))
+        if safe_eval(msg).get('EventType') != 'check_url':
+            ding_rows.handler_map().get(safe_eval(msg).get('EventType'), None)(safe_eval(msg))
         signature_get, timestamp_get, nonce_get = request.httprequest.args.get('signature'),\
                                       request.httprequest.args.get('timestamp'), request.httprequest.args.get('nonce')
+
+        dingcrypto = DingTalkCrypto(ding_rows[0].aes_key1, str(ding_rows[0].random_token), str(ding_rows[0].corpid))
         encrypt = dingcrypto.encrypt("success")
         signature, timestamp, nonce = dingcrypto.sign(encrypt, timestamp_get, nonce_get)
         script_response = {

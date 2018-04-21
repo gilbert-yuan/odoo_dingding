@@ -47,6 +47,7 @@ class ding_ding(models.Model):
             return self.handlers
         return {
             'user_add_org': self.user_add_org,
+            #'check_url': self.register_call_back_interface,
             'user_modify_org': self.user_modify_org,
             'user_leave_org': self.user_leave_org,
             'org_admin_add': self.org_admin_add,
@@ -171,9 +172,9 @@ class ding_ding(models.Model):
         vals = {
             'agent_id': agent_id,
             'process_code': 'PROC-TXEKLZ3V-EJKNZY8FRS05FSWKCBOW1-6CGS3J6J-R',
-            'originator_user_id': '11613705613522631',
+            'originator_user_id': 'manager1461',
             'dept_id': '44507267',
-            'approvers': '03155020331048990,manager1461,08372149511213545',
+            'approvers': 'manager1461',
             'cc_list': 'manager1461',
             'cc_position': 'START_FINISH',
             'form_component_values': simplejson.dumps([{"name": u"采购备注", "value": u"买个西瓜 甜瓜"},
