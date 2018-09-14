@@ -1,4 +1,10 @@
-# odoo_dingding
+# odoo_dingding（最新支持11.0）
+即将实现功能
+
+
+
+
+
 odoo10 对接钉钉部分功能
 功能仅供参考，如要进行实际应用请，核对后再进行操作。
 效果图参见ISSUE（审批模版是要钉钉配置创建的）https://github.com/gilbert-yuan/odoo_dingding/issues/5
