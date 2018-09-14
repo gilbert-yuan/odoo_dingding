@@ -1,1 +1,1 @@
-import page_controller
+from . import page_controller

@@ -9,8 +9,8 @@
     'description': '''''',
     'depends': ['web'],
     'data':
-        ['ding_model.xml',
-         'res_users.xml',
+        ['views/ding_model.xml',
+         'views/res_users.xml',
          ],
     'application': True,
 }

@@ -3,7 +3,7 @@ from odoo import models, fields, api
 from odoo.addons.dingding.ding_api import Dingtalk
 from odoo.exceptions import UserError
 import random, simplejson
-import time
+
 
 ALLCHAR = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
 ALLCALLBACKTAG = ['user_add_org', 'user_modify_org', 'user_leave_org', 'org_admin_add', 'org_admin_remove',
@@ -39,7 +39,6 @@ class ding_ding(models.Model):
     sns_token = fields.Char(u'snstoken', help=u' 使用appid及appSecret访问如下接口， 获取accesstoken，此处获取的token有效期为2小时，\
     有效期内重复获取，返回相同值，并自动续期，如果在有效期外获取会获得新的token值，建议定时获取本token，不需要用户登录时再获取。')
     sns_token_expired_in = fields.Char(u'过期时间', readonly=True)
-
 
 
     def handler_map(self):
