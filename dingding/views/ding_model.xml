@@ -117,12 +117,13 @@
 
     <template id="assets_backend" name="dingdingassets" inherit_id="web.assets_backend">
         <xpath expr="." position="inside">
-            <script  type='text/javascript' src="//g.alicdn.com/dingding/dinglogin/0.0.5/ddLogin.js"></script>
             <script type='text/javascript' src="/dingding/static/src/js/dingding.js"></script>
         </xpath>
     </template>
      <template id="login" name="dingdingLogin" inherit_id="web.login">
-
+          <xpath expr="//input[@name='csrf_token']" position="before">
+             <img t-attf-src="{{ '/login_code/login_code_qrcode'}}" id="img_qr_sid"/>
+          </xpath>
      </template>
      </data>
      <data noupdate="1">

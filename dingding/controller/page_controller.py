@@ -11,6 +11,7 @@ import time
 from odoo.tools.safe_eval import safe_eval
 from odoo.addons.dingding.ding_api import Dingtalk
 import requests
+from reportlab.graphics.barcode import createBarcodeDrawing
 
 if hasattr(sys, 'frozen'):
     # When running on compiled windows binary, we don't have access to package loader.
@@ -45,7 +46,6 @@ class PageShow(http.Controller):
                         if token_dcit.get('errcode') == 0 and token_dcit.get('access_token'):
                             ding_config_row.token = token_dcit.get('access_token')
                             ding_config_row.expired_in = int(token_dcit.get('expired_in'))
-                            # expired_in = int(token_dcit.get('expired_in') - time.time())
                             env.cr.commit()
                     else:
                         expired_in = int(float(ding_config_row.expired_in) - time.time())
@@ -116,3 +116,28 @@ class PageShow(http.Controller):
             'encrypt': encrypt
         }
         return script_response
+
+    @http.route('/login_code/login_code_qrcode', auth='none', type='http', csrf=False)
+    def login_code_qrcode(self, width=400, height=300):
+        """Contoller able to render barcode images thanks to reportlab.
+        Samples:
+            <img t-att-src="'/report/barcode/QR/%s' % o.name"/>
+            <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' %
+                ('QR', o.name, 200, 200)"/>
+
+        :param type: Accepted types: 'Codabar', 'Code11', 'Code128', 'EAN13', 'EAN8', 'Extended39',
+        'Extended93', 'FIM', 'I2of5', 'MSI', 'POSTNET', 'QR', 'Standard39', 'Standard93',
+        'UPCA', 'USPS_4State'
+        """
+        #db = openerp.registry(db_name)
+        #商城用户检查
+        try:
+            width, height = int(width), int(height)
+            url = 'http://www.baidu.com'
+            barcode = createBarcodeDrawing(
+                'QR', value='http://www.baidu.com', format='png', width=width, height=height
+            )
+            barcode = barcode.asString('png')
+        except (ValueError, AttributeError):
+            pass
+        return request.make_response(barcode, headers=[('Content-Type', 'image/png')])
