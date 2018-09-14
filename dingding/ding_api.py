@@ -35,104 +35,12 @@ class Singleton(object):
             cls._instance = super(Singleton, cls).__call__(*args, **kw)
         return cls._instance
 
-
-# class DingSNS(Singleton):
-#         # 详细文档见 https://open-doc.dingtalk.com/docs/doc.htm?spm=a219a.7629140.0.0.USEUsY&treeId=168&articleId=104881&docType=1
-#     def __init__(self, appid, appsecret):  # 初始化的时候需要获取corpid和corpsecret，
-#         self._app_id = appid
-#         self._appsecret = appsecret
-#         self._header = {'Content-Type': 'application/json'}  # 全局固定用的 请求的 header 个别的不一样要单独写
-#         self.url_get_token_for_sns = "https://oapi.dingtalk.com/sns/gettoken" # 普通钉钉用户账号开放及免登 所用到的token ?appid=APPID&appsecret=APPSECRET
-#         self.url_get_persistent_code_for_sns = "https://oapi.dingtalk.com/sns/get_persistent_code" # ?access_token=ACCESS_TOKEN"
-#         self.url_get_snstoken = "https://oapi.dingtalk.com/sns/get_sns_token" # ?access_token=ACCESS_TOKEN 获取持久授权码后方可使用此方法
-#         self.url_get_userinfo = "https://oapi.dingtalk.com/sns/getuserinfo" #?sns_token=SNS_TOKEN
-#         self._token_for_sns = self.get_token_for_sns()
-#         self._persistent_code = self.get_persistent_code_for_sns()
-#         self._snstoken = self.get_snstoken()
-#
-#         # http请求微信验证后再跳转回来
-#     def oauth_authorize_redirect_url(self, db_name, redirect_uri, state_params):
-#             state = {'db': db_name, 'agentid': self.APP_ID or 0}
-#             state.update(state_params)
-#             string_state = '(' + simplejson.dumps(state)[1:-1] + ')'
-#             if redirect_uri and not redirect_uri.startswith('http'):
-#                 redirect_uri = 'http://' + redirect_uri
-#             if not self.CORP_ID:
-#                 raise Exception("当前WxApplication实例没有self.CORP_ID, ")
-#             url = self.authorize_url(redirect_uri, state=string_state)
-#             # url = "%s?appid=%s&redirect_uri=%s&response_type=code&scope=snsapi_base&state=(%s)#wechat_redirect" % (validation_endpoint, self.CORP_ID, redirect_uri, string_state)
-#             print '------ wechat_redirect url:', redirect_uri
-#             return redirect_uri
-#
-#     # OAuth2 https://oapi.dingtalk.com/connect/oauth2/sns_authorize?appid=APPID&response_type=code&scope=snsapi_login&state=STATE&redirect_uri=REDIRECT_URI
-#     @classmethod
-#     def authorize_url(self, redirect_uri, response_type='code',
-#                       scope='snsapi_login', state=None):
-#             # 变态的微信实现，参数的顺序也有讲究。。艹！这个实现太恶心，太恶心！
-#             rd_uri = urllib.urlencode({'redirect_uri': redirect_uri})
-#             url = 'https://oapi.dingtalk.com/connect/oauth2/sns_authorize?'
-#             url += 'appid=%s&' % self._app_id
-#
-#             url += '&response_type=' + response_type
-#             url += '&scope=' + scope
-#             url += rd_uri
-#             if state:
-#                 url += '&state=' + state
-#             return url
-#
-#     def get_token_for_sns(self):
-#         #appid = APPID & appsecret = APPSECRET
-#         res = requests.get(self.url_get_token_for_sns,
-#                            headers=self._header,
-#                            params={'appid': self._app_id,
-#                                    'appsecret': self._appsecret})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_persistent_code_for_sns(self):
-#         res = requests.get(self.url_get_persistent_code_for_sns,
-#                            headers=self._header,
-#                            params={'sccess_token': self._token_for_sns})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_snstoken(self):
-#         res = requests.get(self.url_get_snstoken,
-#                            headers=self._header,
-#                            params={'sccess_token': self._token_for_sns})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def get_userinfo(self):
-#         res = requests.get(self.url_get_userinfo,
-#                            headers=self._header,
-#                            params={'sccess_token': self._snstoken})
-#         try:
-#             return res.json()
-#         except:
-#             self.__raise_error(res)
-#
-#     def __raise_error(self, res):
-#         """
-#         弹出事件返回的报错信息
-#         :param res:
-#         :return:
-#         """
-#         raise UserError(u'错误代码: %s,详细错误信息: %s' % (res.json()['errcode'],
-#                                                   res.json()['errmsg']))
-
-
 # 所有的回调事件
 # 'user_add_org', 'user_modify_org', 'user_leave_org','org_admin_add', 'org_admin_remove', 'org_dept_create',
 # 'org_dept_modify', 'org_dept_remove', 'org_remove','label_user_change', 'label_conf_add', 'label_conf_modify',
 # 'label_conf_del','org_change', 'chat_add_member', 'chat_remove_member', 'chat_quit', 'chat_update_owner',
 # 'chat_update_title', 'chat_disband', 'chat_disband_microapp','check_in','bpms_task_change','bpms_instance_change'
+
 class Dingtalk(Singleton):
     def __init__(self, corpid, corpsecret,
                  agent_id, token={}):  # 初始化的时候需要获取corpid和corpsecret，
@@ -248,7 +156,6 @@ class Dingtalk(Singleton):
         res = requests.get(self.url_checkout_call_back_interface,
                            headers=self._header,
                            params=self.token_dict)
-        print res.json()
         try:
             return res.json()['errcode']
         except:
@@ -267,6 +174,7 @@ class Dingtalk(Singleton):
         获取大部分时间的token(有的事件链接还要单独获取不同的token)
         :return: token 并取得token 获取token的时间
         """
+        print(self.__params, self._header)
         res = requests.get(self.url_get_token, headers=self._header, params=self.__params)
         try:
             token_vals = res.json()
@@ -495,7 +403,7 @@ class Dingtalk(Singleton):
         :param dict_vals:
         :return:
         """
-        keys = [key for key, vals in dict_vals.iteritems() if not dict_vals.get(key)]
+        keys = [key for key, vals in dict_vals.items() if not dict_vals.get(key)]
         for key in keys:
             del dict_vals[key]
         return dict_vals
@@ -597,7 +505,7 @@ class Dingtalk(Singleton):
         return True
 
     def create_new_approver(self, vals):
-        print json.dumps(vals)
+        print(json.dumps(vals))
         vals.update(self.get_common_param(self.method_approver_create_processinstance))
         res = requests.post(self.approver_common_url,
                             headers=self.approver_common_header,

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
-from ding_api import Dingtalk
+from odoo.addons.dingding.ding_api import Dingtalk
 from odoo.exceptions import UserError
 import random, simplejson
 import time
@@ -155,19 +155,20 @@ class ding_ding(models.Model):
 
     def bpms_task_change(self, msg):
         """审批任务开始  审批任务结束 审批任务转交"""
-        print "+++++++++++++=="
+        print("+++++++++++++==")
         pass
 
     def bpms_instance_change(self, msg):
         """审批实例开始  审批实例结束|终止"""
-        print "+++++++++++++=="
+        print("+++++++++++++==")
         pass
 
     def check_in(self, msg):
         pass
 
     def create_new_approver(self):
-        corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
+        agent_row = self.env.ref("dingding.ding_agent_xml")
+        corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message(agent_row.agent_id)
         ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
         vals = {
             'agent_id': agent_id,
@@ -193,11 +194,11 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            print("error")
 
     def get_call_fail_record(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid, corpsecret, False, token_dict)
         return_vals = ding_obj.get_call_fail_record()
         raise UserError(str(return_vals))
 
@@ -211,7 +212,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print return_vals
+            print(return_vals)
 
     def delete_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -220,7 +221,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            print("error")
 
     def update_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -232,7 +233,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            print("error")
 
     def checkout_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -242,7 +243,7 @@ class ding_ding(models.Model):
             self.is_ok_call_back_url = True
             return True
         else:
-            print "error"
+            print("error")
 
     def get_ding_department(self):
         department_obj = self.env['ding.department']
@@ -273,9 +274,9 @@ class ding_ding(models.Model):
             department_row = self.env['ding.department'].search([("department_id", '=',
                                                                   (user.get('department')[
                                                                        len(user.get('department')) - 1]))])
-            print user.get('mobile')
+            print(user.get('mobile'))
             parnter_row = self.env['res.partner'].search([('mobile', '=',  user.get('mobile'))])
-            print parnter_row
+            print(parnter_row)
             if parnter_row:
                 parnter_row.department_id = department_row.id
             if parnter_row.user_ids:
@@ -291,6 +292,7 @@ class ding_ding(models.Model):
 
     def get_dingdinguser(self):
         department_rows = self.env['ding.department'].search([])
+
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
         ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
         for department_row in department_rows:
@@ -299,17 +301,11 @@ class ding_ding(models.Model):
                 if not self.env['ding.user'].search([('ding_id', '=', user.get('userid'))]):
                     self.get_ding_user(user)
 
-    def get_ding_common_message(self):
+    def get_ding_common_message(self, agent_id=False):
         dingding_row = self.env.ref('dingding.ding_ding_xml')
-        if not dingding_row.token or float(dingding_row.expired_in) <= time.time():
-            ding_obj = Dingtalk(dingding_row.corpid, dingding_row.corpsecret,
-                                dingding_row.agent_ids[0].agent_id, {})
-            token_dcit = ding_obj.get_token()
-            dingding_row.token = token_dcit.get('access_token')
-            dingding_row.expired_in = token_dcit.get('expired_in')
         return (dingding_row.corpid,
                 dingding_row.corpsecret,
-                dingding_row.agent_ids[0].agent_id,
+                agent_id,
                 {
                     'access_token': dingding_row.token,
                     'expired_in': dingding_row.expired_in
@@ -439,6 +435,7 @@ class ding_user(models.Model):
         return return_vals
 
     def update_user(self, vals):
+        """更新用户信息"""
         change_keys = {'name': 'name', 'department_id': 'department_id',
                        'mobile_num': 'mobile', 'tel': 'tel',
                        'work_place': 'workPlace', 'email': 'email'}
@@ -451,16 +448,19 @@ class ding_user(models.Model):
             ding_obj.update_user(vals)
         return True
 
-    def send_message(self, message, user_id):
-        corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
+    def send_message(self, message, user_id, agent_id):
+        """发送消息必须指定agent_id"""
+        corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message(agent_id)
         ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
         dinguser_row = self.search([('ding_user_id', '=', user_id)])
         ding_obj.send_text_message(message, dinguser_row.ding_id, '')
         return True
 
     def send_message_test(self):
+        """发送测试信息"""
         for ding_user in self:
-            self.send_message(u'你好呀！%s' % str(random.random()), ding_user.ding_user_id.id)
+            for agent in self.env['ding.agent'].search([]):     # 传入不同的agent_id就会有不同的应用向你发送消息
+                self.send_message(u'你好呀！%s' % str(random.random()), ding_user.ding_user_id.id, agent.agent_id)
 
 
 class ResPartner(models.Model):
@@ -537,6 +537,7 @@ class ResUsers(models.Model):
                                          vals.get('have_dingding_account',
                                                   'default_vals'))
         return user_rows
+
 
 class ExamineApprove(models.Model):
     _name = 'examine.approve'

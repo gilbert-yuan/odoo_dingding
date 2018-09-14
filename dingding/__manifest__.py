@@ -5,7 +5,7 @@
     'website': '',
     'summary': 'odoo中钉钉的嵌入使用',
     'category': 'dingding',
-    'sequence': 10,
+    'sequence': 11,
     'description': '''''',
     'depends': ['web'],
     'data':
