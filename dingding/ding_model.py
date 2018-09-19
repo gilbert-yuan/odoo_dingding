@@ -21,7 +21,11 @@ class ding_ding(models.Model):
     #钉钉中的基本的配置
     corpid = fields.Char(u'钉钉corpid', required=True, help=u'由钉钉开放平台提供给开放应用的唯一标识')
     corpsecret = fields.Char(u'钉钉corpsecret', required=True)
-    agent_ids = fields.One2many('ding.agent', 'ding_id', string='应用ID', required=True)
+    agent_ids = fields.One2many('ding.agent', 'ding_id', string='自建应用（程序主要用于发送消息）', required=True)
+    app_ids = fields.One2many('app.agent', 'ding_id', string='用于扫码登陆', required=True)
+    eagent_ids = fields.One2many('e.agent', 'ding_id', string='自建e 应用',
+                                    help='钉钉新推出了E应用开发，E应用开发是一种全新的开发模式，通过简洁的前端语法写出Native级别的性能体验'
+                                         '，支持iOS、安卓等多端（PC端暂不支持）部署。',  required=True)
     # 保存token（和重置） 用的字段
     token = fields.Char(u'token', readonly=True)
     expired_in = fields.Char(u'过期时间', readonly=True)
@@ -168,7 +172,7 @@ class ding_ding(models.Model):
     def create_new_approver(self):
         agent_row = self.env.ref("dingding.ding_agent_xml")
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message(agent_row.agent_id)
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         vals = {
             'agent_id': agent_id,
             'process_code': 'PROC-TXEKLZ3V-EJKNZY8FRS05FSWKCBOW1-6CGS3J6J-R',
@@ -197,13 +201,13 @@ class ding_ding(models.Model):
 
     def get_call_fail_record(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, False, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         return_vals = ding_obj.get_call_fail_record()
         raise UserError(str(return_vals))
 
     def register_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         return_vals = ding_obj.register_call_back_interface(str(self.random_token),
                                                             str(self.aes_key1),
                                                             self.call_back_url,
@@ -215,7 +219,7 @@ class ding_ding(models.Model):
 
     def delete_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         return_vals = ding_obj.delete_call_back_interface()
         if return_vals == '0':
             return True
@@ -224,7 +228,7 @@ class ding_ding(models.Model):
 
     def update_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(ccorpid=corpid, corpsecret=corpsecret, token=token_dict)
         return_vals = ding_obj.update_call_back_interface(str(self.random_token),
                                                             str(self.aes_key1),
                                                             self.call_back_url,
@@ -236,7 +240,7 @@ class ding_ding(models.Model):
 
     def checkout_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         return_vals = ding_obj.checkout_call_back_interface()
         if return_vals == 0:
             self.is_ok_call_back_url = True
@@ -247,7 +251,7 @@ class ding_ding(models.Model):
     def get_ding_department(self):
         department_obj = self.env['ding.department']
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         department_dict = ding_obj.get_dept_list()
         if not department_dict:
             raise UserError(u'企业号中还没创建部门')
@@ -279,13 +283,17 @@ class ding_ding(models.Model):
             if parnter_row:
                 parnter_row.department_id = department_row.id
             if parnter_row.user_ids:
-                parnter_row.user_ids[0].oauth_access_token = user.get('userid')
+                parnter_row.user_ids[0].oauth_access_token = user.get('unionid')
             cr.execute("""INSERT INTO ding_user 
-                          (department_id, name, work_place, ding_id ,mobile_num, email, position, ding_user_id) VALUES 
-                          (%s,'%s', '%s', '%s','%s', '%s', '%s', %s)""" %
+                          (department_id, name, work_place, ding_id ,mobile_num, email,
+                           position, ding_user_id, jobnumber,open_id, ishide, active, unionid, dingding_id) VALUES
+                          (%s,'%s', '%s', '%s','%s', '%s', '%s', %s, '%s',  '%s', %s, %s,  '%s', '%s')""" %
                        (department_row.id or 'NULL', user.get('name'),
                         user.get('workPlace') or "NULL", user.get('userid'), user.get('mobile'),
-                        user.get('email') or 'NULL', user.get('position') or "NULL",parnter_row and parnter_row.user_ids and  parnter_row.user_ids[0].id or 'NULL'
+                        user.get('email') or 'NULL', user.get('position') or "NULL",
+                        parnter_row and parnter_row.user_ids and parnter_row.user_ids[0].id or 'NULL',
+                        user.get('jobnumber'), user.get('openId'), user.get('isHide'), user.get('active'),
+                        user.get('unionid'), user.get('dingId')
                         ))
         return True
 
@@ -293,10 +301,11 @@ class ding_ding(models.Model):
         department_rows = self.env['ding.department'].search([])
 
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for department_row in department_rows:
             user_dicts = ding_obj.get_depatment_user_list(department_row.department_id)
             for user in user_dicts:
+                print(user)
                 if not self.env['ding.user'].search([('ding_id', '=', user.get('userid'))]):
                     self.get_ding_user(user)
 
@@ -320,6 +329,31 @@ class ding_agent(models.Model):
     ding_id = fields.Many2one('ding.ding', u'钉钉主记录')
 
 
+class AppAgent(models.Model):
+    _name = 'app.agent'
+    _description = u'钉钉客户端应用配置'
+
+    name = fields.Char(u'app agent名字')
+    agent_id = fields.Char(u'app_id', required=True)
+    app_secret = fields.Char(u'appSecret', required=True)
+    ding_id = fields.Many2one('ding.ding', u'钉钉主记录')
+    expired_in = fields.Char(u'过期时间', readonly=True)
+    token = fields.Char(u'token', readonly=True)
+
+
+class EAgent(models.Model):
+    _name = 'e.agent'
+    _description = u'钉钉客户端应用配置'
+
+    name = fields.Char(u'e agent名字')
+    agent_id = fields.Char(u'AgentId', required=True)
+    app_secret = fields.Char(u'appSecret', required=True)
+    app_key = fields.Char(u'AppKey', required=True)
+    ding_id = fields.Many2one('ding.ding', u'钉钉主记录')
+    expired_in = fields.Char(u'过期时间', readonly=True)
+    token = fields.Char(u'token', readonly=True)
+
+
 class ding_department(models.Model):
     _name = 'ding.department'
     _description = u'钉钉用户部门同步'
@@ -339,7 +373,7 @@ class ding_department(models.Model):
 
     def create_department(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for deparment in self:
             ding_id = ding_obj.create_dept(deparment.name,
                                            deparment.ding_id, deparment.parent_order)
@@ -355,7 +389,7 @@ class ding_department(models.Model):
 
     def update_department(self, vals):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for deparment in self:
             vals.update({'id': deparment.name})
             ding_obj.update_dept(vals)
@@ -370,7 +404,7 @@ class ding_department(models.Model):
 
     def delete_department(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for deparment in self:
             ding_obj.delete_dept(deparment.name)
         return True
@@ -392,10 +426,17 @@ class ding_user(models.Model):
     work_place = fields.Char(u'办公地点')
     tel = fields.Char(u'电话')
     position = fields.Char(u'职位')
+    openid = fields.Char(u'openId')
+    ishide = fields.Boolean(u'isHide')
+    active = fields.Boolean(u'active')
+    unionid = fields.Char(u'unionid')
+    jobnumber = fields.Char(u'jobnumber')
+    dingding_id = fields.Char(u'dingding_id')
+    open_id = fields.Char(u'open_id')
 
     def create_ding_user(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for user in self:
             user_vals = dict(name=user.name, department=[user.department_id.department_id] or [1],
                              mobile=user.mobile_num, tel=user.tel, email=user.email,
@@ -407,7 +448,7 @@ class ding_user(models.Model):
 
     def delete_user(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for user in self:
             ding_obj.delete_user(user.ding_id)
         return True
@@ -441,7 +482,7 @@ class ding_user(models.Model):
         vals = {change_keys.get(key): vals.get(key) for key in change_keys.keys()
                 if key in vals}
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict)
         for user in self:
             vals.update({'userid': user.ding_id, 'name': user.name})
             ding_obj.update_user(vals)
@@ -450,7 +491,7 @@ class ding_user(models.Model):
     def send_message(self, message, user_id, agent_id):
         """发送消息必须指定agent_id"""
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message(agent_id)
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, token=token_dict, agent_id=agent_id)
         dinguser_row = self.search([('ding_user_id', '=', user_id)])
         ding_obj.send_text_message(message, dinguser_row.ding_id, '')
         return True
@@ -547,3 +588,4 @@ class ExamineApprove(models.Model):
     cc_list = fields.Many2many('ding.user', 'user_prove_ref', 'user_id', 'appeove_id', string='抄送人列表')
     cc_position = fields.Selection([('START', u'审批开始'), ('FINISH', u'审批结束'), ('START_FINISH', u'开始和结束')],
                                    string='抄送时间')
+

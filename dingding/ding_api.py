@@ -42,12 +42,16 @@ class Singleton(object):
 # 'chat_update_title', 'chat_disband', 'chat_disband_microapp','check_in','bpms_task_change','bpms_instance_change'
 
 class Dingtalk(Singleton):
-    def __init__(self, corpid, corpsecret,
-                 agent_id, token={}):  # 初始化的时候需要获取corpid和corpsecret，
+    def __init__(self, corpid=None, corpsecret=None,
+                 agent_id=None, token={}, appkey=None, appsecret=None):  # 初始化的时候需要获取corpid和corpsecret，
         # 需要从管理后台获取 , corpid, corpsecret, agent_id
         self.__params = {
             'corpid': corpid,
             'corpsecret': corpsecret,
+        }
+        self.__app_params = {
+            'appid': appkey,
+            'appsecret': appsecret,
         }
         self.token_dict = {
             'access_token': token.get('access_token')
@@ -57,7 +61,9 @@ class Dingtalk(Singleton):
 
         self._url_jsapi_ticket = 'https://oapi.dingtalk.com/get_jsapi_ticket'
         self.url_get_token = 'https://oapi.dingtalk.com/gettoken'
+        self.url_get_app_token = 'https://oapi.dingtalk.com/sns/gettoken'
         self.get_sso_token = 'https://oapi.dingtalk.com/sso/gettoken'
+        self.url_get_sns_token = 'https://oapi.dingtalk.com/sns/get_sns_token'
         self.url_get_dept_list = 'https://oapi.dingtalk.com/department/list'
         self.url_get_dept_detail = 'https://oapi.dingtalk.com/department/get'
         self.url_create_dept = 'https://oapi.dingtalk.com/department/create'
@@ -71,7 +77,8 @@ class Dingtalk(Singleton):
         self.url_update_user = 'https://oapi.dingtalk.com/user/update'
         self.url_user_list = 'https://oapi.dingtalk.com/user/list'
         self.url_get_user_count = 'https://oapi.dingtalk.com/user/get_org_user_count'
-
+        self.url_get_persistent_code = "https://oapi.dingtalk.com/sns/get_persistent_code"
+        self.url_get_user_info_by_sns_token = 'https://oapi.dingtalk.com/sns/getuserinfo'
         self.url_delete_user = 'https://oapi.dingtalk.com/user/delete'
         self.url_register_call_back_interface = "https://oapi.dingtalk.com/call_back/register_call_back"
         self.url_update_call_back_interface = "https://oapi.dingtalk.com/call_back/update_call_back"
@@ -88,6 +95,46 @@ class Dingtalk(Singleton):
         res = requests.get(self.url_get_call_fail_record,
                            headers=self._header,
                            params=self.token_dict)
+        try:
+            return res.json()
+        except:
+            self.__raise_error(res)
+
+    def get_user_info_by_sns_token(self, sns_token):
+        params = {
+            'sns_token': sns_token
+        }
+        params.update(self.token_dict)
+        res = requests.get(self.url_get_user_info_by_sns_token,
+                           headers=self._header,
+                           params=params)
+        try:
+            return res.json()
+        except:
+            self.__raise_error(res)
+
+    def get_persistent_code(self, code):
+        params = {
+            'tmp_auth_code': code
+        }
+        res = requests.post(self.url_get_persistent_code,
+                           headers=self._header,
+                           params=self.token_dict,
+                            data=json.dumps(params))
+        try:
+            return res.json()
+        except:
+            self.__raise_error(res)
+
+    def get_sns_token(self, openid, persistent_code):
+        params = {
+            'openid': openid,
+            'persistent_code': persistent_code,
+        }
+        res = requests.post(self.url_get_sns_token,
+                           headers=self._header,
+                           params=self.token_dict,
+                           data=json.dumps(params))
         try:
             return res.json()
         except:
@@ -168,6 +215,20 @@ class Dingtalk(Singleton):
         :return:
         """
         raise UserError(u'错误代码: %s,详细错误信息: %s' % (res.json()['errcode'], res.json()['errmsg']))
+
+    def app_get_token(self):
+        """
+        获取大部分时间的token(有的事件链接还要单独获取不同的token)
+        :return: token 并取得token 获取token的时间
+        """
+        print(self.__params, self._header)
+        res = requests.get(self.url_get_app_token, headers=self._header, params=self.__app_params)
+        try:
+            token_vals = res.json()
+            token_vals.update({'expired_in': (time.time() + 7200)})
+            return token_vals
+        except:
+            self.__raise_error(res)
 
     def get_token(self):
         """

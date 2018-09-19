@@ -19,26 +19,20 @@
             <field name="arch" type="xml">
                 <form string="钉钉">
                     <header>
-                         <button name="get_ding_department" type="object" class="oe_highlight" string="获取钉钉部门"/>
-                         <button name="get_dingdinguser" type="object" class="oe_highlight" string="获取钉钉用户"/>
-                         <button name="register_call_back_interface" type="object" class="oe_highlight" string="注册回调接口"/>
-                         <button name="checkout_call_back_interface" type="object" class="oe_highlight" string="验证回调接口"/>
-                         <button name="update_call_back_interface" type="object" class="oe_highlight" string="更新回调接口"/>
-                         <button name="delete_call_back_interface" type="object" class="oe_highlight" string="删除回调接口"/>
-                         <button name="get_call_fail_record" type="object" class="oe_highlight" string="获取失败的回调"/>
-                         <button name="create_new_approver" type="object" class="oe_highlight" string="发起审批实例"/>
+                        <button name="get_ding_department" type="object" class="oe_highlight" string="获取钉钉部门"/>
+                        <button name="get_dingdinguser" type="object" class="oe_highlight" string="获取钉钉用户"/>
+                        <button name="register_call_back_interface" type="object" class="oe_highlight" string="注册回调接口"/>
+                        <button name="checkout_call_back_interface" type="object" class="oe_highlight" string="验证回调接口"/>
+                        <button name="update_call_back_interface" type="object" class="oe_highlight" string="更新回调接口"/>
+                        <button name="delete_call_back_interface" type="object" class="oe_highlight" string="删除回调接口"/>
+                        <button name="get_call_fail_record" type="object" class="oe_highlight" string="获取失败的回调"/>
+                        <button name="create_new_approver" type="object" class="oe_highlight" string="发起审批实例"/>
 
                     </header>
                     <group>
                         <field name="name"/>
                         <field name="corpid"/>
                         <field name='corpsecret'/>
-                        <field name='agent_ids'>
-                            <tree editable="bottom">
-                                <field name="name"/>
-                                <field name="agent_id"/>
-                            </tree>
-                        </field>
                         <field name='token'/>
                         <field name='expired_in'/>
                         <field name='aes_key1'/>
@@ -47,6 +41,46 @@
                         <field name='call_back_tags'/>
                         <field name='is_ok_call_back_url'/>
                     </group>
+                    <notebook>
+                        <page string="自建应用">
+                            <group>
+                                <field name='agent_ids'>
+                                    <tree editable="bottom">
+                                        <field name="name"/>
+                                        <field name="agent_id"/>
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="扫码登陆">
+                            <group>
+                                <field name='app_ids'>
+                                    <tree editable="bottom">
+                                        <field name="name"/>
+                                        <field name="agent_id"/>
+                                        <field name="app_secret"/>
+                                        <field name="token"/>
+                                        <field name="expired_in"/>
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                        <page string="自建E应用 速度比自建应用快">
+                            <group>
+                                <field name='eagent_ids'>
+                                    <tree editable="bottom">
+                                        <field name="name"/>
+                                        <field name="agent_id"/>
+                                        <field name="app_secret"/>
+                                        <field name="app_key"/>
+                                        <field name="token"/>
+                                        <field name="expired_in"/>
+                                    </tree>
+                                </field>
+                            </group>
+                        </page>
+                    </notebook>
+
                 </form>
             </field>
         </record>
@@ -115,29 +149,65 @@
         <menuitem id='ding_department_menu' name='钉钉部门' action='ding_department_action'
                   parent='base.menu_users' sequence='10'/>
 
-    <template id="assets_backend" name="dingdingassets" inherit_id="web.assets_backend">
-        <xpath expr="." position="inside">
-            <script type='text/javascript' src="/dingding/static/src/js/dingding.js"></script>
-        </xpath>
-    </template>
-     <template id="login" name="dingdingLogin" inherit_id="web.login">
-          <xpath expr="//input[@name='csrf_token']" position="before">
-             <img t-attf-src="{{ '/login_code/login_code_qrcode'}}" id="img_qr_sid"/>
-          </xpath>
-     </template>
-     </data>
-     <data noupdate="1">
+        <template id="assets_backend" name="dingdingassets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <script type='text/javascript' src="/dingding/static/src/js/dingding.js"></script>
+            </xpath>
+        </template>
+        <template id="login" name="dingdingLogin" inherit_id="web.login">
+            <xpath expr="//input[@name='csrf_token']" position="before">
+                <script type='text/javascript' src="//g.alicdn.com/dingding/dinglogin/0.0.5/ddLogin.js"></script>
+                <script>
+                    $(function(){
+                    var obj = DDLogin({
+                    id:"login_container",
+                    goto: "<t t-esc="redirect_url_quote"/>",
+                    style: "border:none;background-color:#FFFFFF;",
+                    width : "365",
+                    height: "400"
+                    });
+                    var hanndleMessage = function (event) {
+                    var origin = event.origin;
+                    console.log("origin", event.origin);
+                    if (origin == "https://login.dingtalk.com") { //判断是否来自ddLogin扫码事件。
+                    var loginTmpCode = event.data; //拿到loginTmpCode后就可以在这里构造跳转链接进行跳转了
+                    console.log("loginTmpCode", loginTmpCode);
+                    window.location.href="<t t-esc="origin_url"/>" + "&amp;loginTmpCode=" + loginTmpCode
+
+                    }
+                    };
+                    if (typeof window.addEventListener != 'undefined') {
+                    window.addEventListener('message', hanndleMessage, false);
+                    } else if (typeof window.attachEvent != 'undefined') {
+                    window.attachEvent('onmessage', hanndleMessage);
+                    }
+                    });
+                </script>
+                <span>
+                    <t t-esc="redirect_url"/>
+                </span>
+                <div id="login_container"></div>
+            </xpath>
+        </template>
+    </data>
+    <data noupdate="1">
         <record id='ding_ding_xml' model="ding.ding">
             <field name="name">odootest</field>
             <field name="corpid">ding95b28951cc12e7d835c2f4657eb6378f</field>
             <field name="corpsecret">mYZM01r9Zj3lMj2x5KdBMcA0v842pP6_GIw_FNNolc1zCujCUzA4eUyuLYflp9</field>
         </record>
-
         <record id='ding_agent_xml' model="ding.agent">
             <field name="name">odootest</field>
             <field name="agent_id">109277466</field>
             <field name="ding_id" ref="dingding.ding_ding_xml"/>
         </record>
-    </data>
+        <record id='app_agent_xml' model="app.agent">
+            <field name="name">免登录app</field>
+            <field name="agent_id">dingoaosarn9kswmozjldq</field>
+            <field name="app_secret">5KCEF90rE9IhMTFH4UWaa6BBj0Ig146LsBW_qFXdef1gP80FdGH3GiCpS0JW-b1S</field>
+            <field name="ding_id" ref="dingding.ding_ding_xml"/>
+        </record>
 
+
+    </data>
 </odoo>

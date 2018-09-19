@@ -8,10 +8,13 @@ import jinja2
 import threading
 import odoo
 import time
+import werkzeug
+from urllib import parse
 from odoo.tools.safe_eval import safe_eval
 from odoo.addons.dingding.ding_api import Dingtalk
 import requests
-from reportlab.graphics.barcode import createBarcodeDrawing
+from odoo.addons.web.controllers.main import Home
+
 
 if hasattr(sys, 'frozen'):
     # When running on compiled windows binary, we don't have access to package loader.
@@ -20,6 +23,31 @@ if hasattr(sys, 'frozen'):
 else:
     loader = jinja2.PackageLoader('odoo.addons.dingding.controller', "html")
 env = jinja2.Environment('<%', '%>', '${', '}', '%', loader=loader, autoescape=True)
+
+
+class DingDingLogin(Home):
+
+    @http.route()
+    def web_login(self, *args, **kw):
+        registry = odoo.registry(request.db)
+
+        with registry.cursor() as cr:
+            env = odoo.api.Environment(cr, odoo.SUPERUSER_ID, {})
+            appid = env.ref('dingding.ding_ding_xml')
+            host_url = 'https://oapi.dingtalk.com/connect/oauth2/sns_authorize'
+            redirect_uri = 'http://jdvop.tunnel.800890.com/dingding/login'
+            appid = 'dingoaosarn9kswmozjldq'
+            origin_url = ("{host_url}?appid={appid}&response_type=code&scope=snsapi_login"
+                                  "&state=STATE&redirect_uri={redirect_uri}".format(host_url=host_url,
+                                                                                    appid=appid,
+                                                                        redirect_uri=redirect_uri))
+            url = parse.quote(origin_url, 'utf-8')
+            print(url)
+            request.params.setdefault('redirect_url_quote',  url)
+            request.params.setdefault('origin_url',  origin_url)
+
+        response = super(DingDingLogin, self).web_login(*args, **kw)
+        return response
 
 
 class PageShow(http.Controller):
@@ -41,7 +69,7 @@ class PageShow(http.Controller):
                 ding_config_row = env.ref('dingding.ding_ding_xml')
                 if ding_config_row:
                     if float(ding_config_row.expired_in or 0) <= time.time():
-                        ding_obj = Dingtalk(ding_config_row.corpid, ding_config_row.corpsecret, False, {})
+                        ding_obj = Dingtalk(corpid=ding_config_row.corpid, corpsecret=ding_config_row.corpsecret)
                         token_dcit = ding_obj.get_token()
                         if token_dcit.get('errcode') == 0 and token_dcit.get('access_token'):
                             ding_config_row.token = token_dcit.get('access_token')
@@ -49,13 +77,23 @@ class PageShow(http.Controller):
                             env.cr.commit()
                     else:
                         expired_in = int(float(ding_config_row.expired_in) - time.time())
+                    for app in ding_config_row.app_ids:
+                        if float(app.expired_in or 0) <= time.time():
+                            ding_obj = Dingtalk(appkey=app.agent_id, appsecret=app.app_secret)
+                            token_dcit = ding_obj.app_get_token()
+                            if token_dcit.get('errcode') == 0 and token_dcit.get('access_token'):
+                                app.token = token_dcit.get('access_token')
+                                app.expired_in = int(token_dcit.get('expired_in'))
+                                env.cr.commit()
+                        else:
+                            expired_in = min(int(float(ding_config_row.expired_in) - time.time()), expired_in)
                 time.sleep(expired_in)
 
     @http.route('/dingding/firstpage', auth='none', type="http", csrf=False)
     def dingding_pulling(self, **args):
         template = env.get_template("apps.html")
         corpid, corpsecret, agent_id, token_dict = request.env['ding.ding'].sudo().get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, agent_id=agent_id, token=token_dict)
         signature, timestamp, nonceStr = ding_obj.get_js_api_params(str(request.httprequest.base_url), '1234')
         return template.render({
             'corpId': corpid,
@@ -70,7 +108,7 @@ class PageShow(http.Controller):
     @http.route('/dingding/getdingdingconfig', auth='none', type="json", csrf=False)
     def getdingdingconfig(self, **args):
         corpid, corpsecret, agent_id, token_dict = request.env['ding.ding'].sudo().get_ding_common_message()
-        ding_obj = Dingtalk(corpid, corpsecret, agent_id, token_dict)
+        ding_obj = Dingtalk(corpid=corpid, corpsecret=corpsecret, agent_id=agent_id, token=token_dict)
         signature, timestamp, nonceStr = ding_obj.get_js_api_params(str(request.httprequest.base_url), '1234')
         return {
             'corpId': corpid,
@@ -117,27 +155,16 @@ class PageShow(http.Controller):
         }
         return script_response
 
-    @http.route('/login_code/login_code_qrcode', auth='none', type='http', csrf=False)
-    def login_code_qrcode(self, width=400, height=300):
-        """Contoller able to render barcode images thanks to reportlab.
-        Samples:
-            <img t-att-src="'/report/barcode/QR/%s' % o.name"/>
-            <img t-att-src="'/report/barcode/?type=%s&amp;value=%s&amp;width=%s&amp;height=%s' %
-                ('QR', o.name, 200, 200)"/>
+    @http.route('/dingding/login', auth='none', type="http", csrf=False)
+    def dingding_login(self, **kwargs):
+        for app_agent in request.env['app.agent'].sudo().search([]):
+            ding_obj = Dingtalk(token={'access_token': app_agent.token})
+            persistent_code_dict = ding_obj.get_persistent_code(kwargs.get('code'))
+            sns_token_dict = ding_obj.get_sns_token(persistent_code_dict.get('openid'),
+                                                          persistent_code_dict.get('persistent_code'))
+            user_info_dict = ding_obj.get_user_info_by_sns_token(sns_token_dict.get('sns_token'))
+            for user in request.env['ding.user'].sudo().search([('unionid', '=', user_info_dict.get('user_info', {}).get('unionid'))]):
+                request.session.authenticate(request.session.db, user.ding_user_id.login, user.ding_user_id.oauth_access_token)
+                return http.local_redirect('/web/')
+            return werkzeug.utils.redirect('/web')
 
-        :param type: Accepted types: 'Codabar', 'Code11', 'Code128', 'EAN13', 'EAN8', 'Extended39',
-        'Extended93', 'FIM', 'I2of5', 'MSI', 'POSTNET', 'QR', 'Standard39', 'Standard93',
-        'UPCA', 'USPS_4State'
-        """
-        #db = openerp.registry(db_name)
-        #商城用户检查
-        try:
-            width, height = int(width), int(height)
-            url = 'http://www.baidu.com'
-            barcode = createBarcodeDrawing(
-                'QR', value='http://www.baidu.com', format='png', width=width, height=height
-            )
-            barcode = barcode.asString('png')
-        except (ValueError, AttributeError):
-            pass
-        return request.make_response(barcode, headers=[('Content-Type', 'image/png')])
