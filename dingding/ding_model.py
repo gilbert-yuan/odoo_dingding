@@ -158,12 +158,10 @@ class ding_ding(models.Model):
 
     def bpms_task_change(self, msg):
         """审批任务开始  审批任务结束 审批任务转交"""
-        print("+++++++++++++==")
         pass
 
     def bpms_instance_change(self, msg):
         """审批实例开始  审批实例结束|终止"""
-        print("+++++++++++++==")
         pass
 
     def check_in(self, msg):
@@ -277,9 +275,7 @@ class ding_ding(models.Model):
             department_row = self.env['ding.department'].search([("department_id", '=',
                                                                   (user.get('department')[
                                                                        len(user.get('department')) - 1]))])
-            print(user.get('mobile'))
             parnter_row = self.env['res.partner'].search([('mobile', '=',  user.get('mobile'))])
-            print(parnter_row)
             if parnter_row:
                 parnter_row.department_id = department_row.id
             if parnter_row.user_ids:
@@ -305,7 +301,6 @@ class ding_ding(models.Model):
         for department_row in department_rows:
             user_dicts = ding_obj.get_depatment_user_list(department_row.department_id)
             for user in user_dicts:
-                print(user)
                 if not self.env['ding.user'].search([('ding_id', '=', user.get('userid'))]):
                     self.get_ding_user(user)
 

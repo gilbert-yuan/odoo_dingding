@@ -42,7 +42,6 @@ class DingDingLogin(Home):
                                                                                     appid=appid,
                                                                         redirect_uri=redirect_uri))
             url = parse.quote(origin_url, 'utf-8')
-            print(url)
             request.params.setdefault('redirect_url_quote',  url)
             request.params.setdefault('origin_url',  origin_url)
 

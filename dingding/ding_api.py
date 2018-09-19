@@ -10,7 +10,7 @@ from odoo.exceptions import UserError
 import hashlib
 import urllib
 import simplejson
-
+import functools
 # 这个设置可以去除 urllib3的不必要的 warning
 requests.packages.urllib3.disable_warnings()
 
@@ -221,7 +221,6 @@ class Dingtalk(Singleton):
         获取大部分时间的token(有的事件链接还要单独获取不同的token)
         :return: token 并取得token 获取token的时间
         """
-        print(self.__params, self._header)
         res = requests.get(self.url_get_app_token, headers=self._header, params=self.__app_params)
         try:
             token_vals = res.json()
@@ -235,7 +234,6 @@ class Dingtalk(Singleton):
         获取大部分时间的token(有的事件链接还要单独获取不同的token)
         :return: token 并取得token 获取token的时间
         """
-        print(self.__params, self._header)
         res = requests.get(self.url_get_token, headers=self._header, params=self.__params)
         try:
             token_vals = res.json()
@@ -417,13 +415,21 @@ class Dingtalk(Singleton):
         except:
             self.__raise_error(res)
 
+    def cmp(self, val_one, val_two):
+        return_val = 0
+        if val_one > val_two:
+            return_val = 1
+        elif val_one < val_two:
+            return_val = -1
+        return return_val
+
     def get_signature(self, vals={}):
         """
         对jsapi 参数进行处理获取 对应参数的 signature
         :param vals:
         :return:
         """
-        sorted_vals = sorted(vals.items(), lambda x, y: cmp(x[1], y[1]))
+        sorted_vals = sorted(vals.items(), lambda x, y: self.cmp(x[1], y[1]))
         url_vals = urllib.urlencode(sorted_vals)
         signature = hashlib.sha1(url_vals).hexdigest()  # sha 加密
         return signature
@@ -566,7 +572,6 @@ class Dingtalk(Singleton):
         return True
 
     def create_new_approver(self, vals):
-        print(json.dumps(vals))
         vals.update(self.get_common_param(self.method_approver_create_processinstance))
         res = requests.post(self.approver_common_url,
                             headers=self.approver_common_header,
