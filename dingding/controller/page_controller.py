@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import http
-from odoo.http import HttpRequest, request
+from odoo.http import HttpRequest, request, Response, JsonRequest
 from odoo.addons.dingding.dingtalk_crypto.crypto import DingTalkCrypto
 import os
 import sys
@@ -18,6 +18,41 @@ if hasattr(sys, 'frozen'):
 else:
     loader = jinja2.PackageLoader('odoo.addons.dingding.controller', "html")
 env = jinja2.Environment('<%', '%>', '${', '}', '%', loader=loader, autoescape=True)
+
+
+def _json_response(self, result=None, error=None):
+    response = {
+        'jsonrpc': '2.0',
+        'id': self.jsonrequest.get('id')
+    }
+    if result and isinstance(result, dict) and result.get('msg_signature'):
+        mime = 'application/json'
+        body = json.dumps(result)
+        return Response(
+            body, headers=[('Content-Type', mime),
+                           ('Content-Length', len(body))])
+    if error is not None:
+        response['error'] = error
+    if result is not None:
+        response['result'] = result
+
+    if self.jsonp:
+        # If we use jsonp, that's mean we are called from another host
+        # Some browser (IE and Safari) do no allow third party cookies
+        # We need then to manage http sessions manually.
+        response['session_id'] = self.session.sid
+        mime = 'application/javascript'
+        body = "%s(%s);" % (self.jsonp, json.dumps(response),)
+    else:
+        mime = 'application/json'
+        body = json.dumps(response)
+
+    return Response(
+        body, headers=[('Content-Type', mime),
+                       ('Content-Length', len(body))])
+
+
+JsonRequest._json_response = _json_response
 
 
 class PageShow(http.Controller):
@@ -111,6 +146,7 @@ class PageShow(http.Controller):
         dingcrypto = DingTalkCrypto(ding_rows[0].aes_key1, str(ding_rows[0].random_token), str(ding_rows[0].corpid))
         rand_str, length, msg, key = dingcrypto.decrypt(request.jsonrequest.get('encrypt'))
         if safe_eval(msg).get('EventType') != 'check_url':
+            print safe_eval(msg), "============"
             ding_rows.handler_map().get(safe_eval(msg).get('EventType'), None)(safe_eval(msg))
         signature_get, timestamp_get, nonce_get = request.httprequest.args.get('signature'),\
                                       request.httprequest.args.get('timestamp'), request.httprequest.args.get('nonce')
@@ -224,3 +260,4 @@ class PageShow(http.Controller):
 
         except Exception:
             return request.make_response(simplejson.dumps({}))
+
