@@ -19,9 +19,9 @@ class ding_ding(models.Model):
 
     name = fields.Char(u'钉钉对象')
     #钉钉中的基本的配置
-    corpid = fields.Char(u'钉钉corpid', required=True, help=u'由钉钉开放平台提供给开放应用的唯一标识')
-    corpsecret = fields.Char(u'钉钉corpsecret', required=True)
-    agent_ids = fields.One2many('ding.agent', 'ding_id', string='应用ID', required=True)
+    corpid = fields.Char(u'钉钉AppKey', required=True, help=u'由钉钉开放平台提供给开放应用的唯一标识')
+    corpsecret = fields.Char(u'钉钉AppSecret', required=True)
+    agent_id = fields.Char(u'agent_id')
     # 保存token（和重置） 用的字段
     token = fields.Char(u'token', readonly=True)
     expired_in = fields.Char(u'过期时间', readonly=True)

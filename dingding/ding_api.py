@@ -138,8 +138,8 @@ class Dingtalk(Singleton):
                  agent_id, token={}):  # 初始化的时候需要获取corpid和corpsecret，
         # 需要从管理后台获取 , corpid, corpsecret, agent_id
         self.__params = {
-            'corpid': corpid,
-            'corpsecret': corpsecret,
+            'appkey': corpid,
+            'appsecret': corpsecret,
         }
         self.token_dict = {
             'access_token': token.get('access_token')

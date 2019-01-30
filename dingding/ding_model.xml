@@ -33,12 +33,7 @@
                         <field name="name"/>
                         <field name="corpid"/>
                         <field name='corpsecret'/>
-                        <field name='agent_ids'>
-                            <tree editable="bottom">
-                                <field name="name"/>
-                                <field name="agent_id"/>
-                            </tree>
-                        </field>
+                        <field name='agent_id'/>
                         <field name='token'/>
                         <field name='expired_in'/>
                         <field name='aes_key1'/>
