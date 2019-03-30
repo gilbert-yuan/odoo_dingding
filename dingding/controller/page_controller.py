@@ -29,6 +29,7 @@ def _json_response(self, result=None, error=None):
         print result
         mime = 'application/json'
         body = json.dumps(result)
+        print body
         return Response(
             body, headers=[('Content-Type', mime),
                            ('Content-Length', len(body))])
@@ -143,12 +144,14 @@ class PageShow(http.Controller):
         rand_str, length, msg, key = dingcrypto.decrypt(request.jsonrequest.get('encrypt'))
         if safe_eval(msg).get('EventType') != 'check_url':
             ding_rows.handler_map().get(safe_eval(msg).get('EventType'), None)(safe_eval(msg))
+        print  request.httprequest.args.get('nonce'), " request.httprequest.args.get('nonce')"
         signature_get, timestamp_get, nonce_get = request.httprequest.args.get('signature'),\
                                       request.httprequest.args.get('timestamp'), request.httprequest.args.get('nonce')
 
         dingcrypto = DingTalkCrypto(ding_rows[0].aes_key1, str(ding_rows[0].random_token), str(ding_rows[0].corpid))
         encrypt = dingcrypto.encrypt("success")
         signature, timestamp, nonce = dingcrypto.sign(encrypt, timestamp_get, nonce_get)
+        print nonce_get
         script_response = {
             'msg_signature': signature,
             'timeStamp': timestamp_get,

@@ -28,4 +28,5 @@ def random_alpha(length=8):
     with contextlib.closing(StringIO.StringIO()) as buf:
         for _ in xrange(length):
             buf.write(random.choice(alpha))
+        buf.seek(0)
         return buf.read()
