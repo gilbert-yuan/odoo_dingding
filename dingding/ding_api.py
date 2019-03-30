@@ -248,7 +248,6 @@ class Dingtalk(Singleton):
         res = requests.get(self.url_checkout_call_back_interface,
                            headers=self._header,
                            params=self.token_dict)
-        print res.json()
         try:
             return res.json()['errcode']
         except:
@@ -597,7 +596,6 @@ class Dingtalk(Singleton):
         return True
 
     def create_new_approver(self, vals):
-        print json.dumps(vals)
         vals.update(self.get_common_param(self.method_approver_create_processinstance))
         res = requests.post(self.approver_common_url,
                             headers=self.approver_common_header,

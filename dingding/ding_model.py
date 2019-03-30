@@ -4,7 +4,8 @@ from ding_api import Dingtalk
 from odoo.exceptions import UserError
 import random, simplejson
 import time
-
+import logging
+_logger = logging.getLogger(__name__)
 ALLCHAR = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
 ALLCALLBACKTAG = ['user_add_org', 'user_modify_org', 'user_leave_org', 'org_admin_add', 'org_admin_remove',
                   'org_dept_create', 'org_dept_modify', 'org_dept_remove', 'org_remove', 'chat_add_member',
@@ -155,12 +156,10 @@ class ding_ding(models.Model):
 
     def bpms_task_change(self, msg):
         """审批任务开始  审批任务结束 审批任务转交"""
-        print "+++++++++++++=="
         pass
 
     def bpms_instance_change(self, msg):
         """审批实例开始  审批实例结束|终止"""
-        print "+++++++++++++=="
         pass
 
     def check_in(self, msg):
@@ -193,7 +192,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            _logger.error("error")
 
     def get_call_fail_record(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -211,7 +210,8 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print return_vals
+            _logger.error(return_vals)
+            
 
     def delete_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -220,7 +220,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            _logger.error("error")
 
     def update_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -232,7 +232,7 @@ class ding_ding(models.Model):
         if return_vals == '0':
             return True
         else:
-            print "error"
+            _logger.error("error")
 
     def checkout_call_back_interface(self):
         corpid, corpsecret, agent_id, token_dict = self.env['ding.ding'].get_ding_common_message()
@@ -242,7 +242,7 @@ class ding_ding(models.Model):
             self.is_ok_call_back_url = True
             return True
         else:
-            print "error"
+            _logger.error("error")
 
     def get_ding_department(self):
         department_obj = self.env['ding.department']
@@ -273,9 +273,8 @@ class ding_ding(models.Model):
             department_row = self.env['ding.department'].search([("department_id", '=',
                                                                   (user.get('department')[
                                                                        len(user.get('department')) - 1]))])
-            print user.get('mobile')
             parnter_row = self.env['res.partner'].search([('mobile', '=',  user.get('mobile'))])
-            print parnter_row
+        
             if parnter_row:
                 parnter_row.department_id = department_row.id
             if parnter_row.user_ids:
@@ -303,13 +302,13 @@ class ding_ding(models.Model):
         dingding_row = self.env.ref('dingding.ding_ding_xml')
         if not dingding_row.token or float(dingding_row.expired_in) <= time.time():
             ding_obj = Dingtalk(dingding_row.corpid, dingding_row.corpsecret,
-                                dingding_row.agent_ids[0].agent_id, {})
+                                dingding_row.agent_id, {})
             token_dcit = ding_obj.get_token()
             dingding_row.token = token_dcit.get('access_token')
             dingding_row.expired_in = token_dcit.get('expired_in')
         return (dingding_row.corpid,
                 dingding_row.corpsecret,
-                dingding_row.agent_ids[0].agent_id,
+                dingding_row.agent_id,
                 {
                     'access_token': dingding_row.token,
                     'expired_in': dingding_row.expired_in

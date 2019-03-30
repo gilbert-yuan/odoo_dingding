@@ -26,6 +26,7 @@ def _json_response(self, result=None, error=None):
         'id': self.jsonrequest.get('id')
     }
     if result and isinstance(result, dict) and result.get('msg_signature'):
+        print result
         mime = 'application/json'
         body = json.dumps(result)
         return Response(
@@ -97,14 +98,10 @@ class PageShow(http.Controller):
         res = requests.get('https://oapi.dingtalk.com/user/getuserinfo', params=args)
         try:
             dingding_userid = res.json()['userid']
-            print dingding_userid
             dinguser_row = request.env['ding.user'].sudo().search([('ding_id', '=', dingding_userid)])
-            print dinguser_row
             if dinguser_row:
                 uid = request.session.authenticate(request.session.db, dinguser_row.ding_user_id.login,
                                          dinguser_row.ding_user_id.oauth_access_token)
-
-                print uid
             return request.make_response(res.json())
         except:
              return 'error'
@@ -124,13 +121,11 @@ class PageShow(http.Controller):
                 second_menu.update({'child_menu': request.env['ir.ui.menu'].sudo().search_read([('id', 'in', second_menu.get('child_id', []))])})
             menu_row.update({'child_menu': second_menus})
             menu_rows.append(menu_row)
-        print menu_rows
         return request.make_response(simplejson.dumps(menu_rows))
 
     @http.route('/odoo/get_second_level_menu', auth='none', type='http', crsf=False)
     def get_second_level_menu(self, **args):
         menu_id = request.params.get('parent_id')
-        print menu_id
         menu_rows = request.env['ir.ui.menu'].sudo().search_read([('parent_id', '=', int(menu_id)), ('action', '=', False)])
         return request.make_response(simplejson.dumps(menu_rows))
 
@@ -143,10 +138,10 @@ class PageShow(http.Controller):
     @http.route('/dingding/call_back_url', auth='none', type="json", csrf=False)
     def dingding_call_back(self, **args):
         ding_rows = request.env['ding.ding'].sudo().search([])
+        print request.jsonrequest
         dingcrypto = DingTalkCrypto(ding_rows[0].aes_key1, str(ding_rows[0].random_token), str(ding_rows[0].corpid))
         rand_str, length, msg, key = dingcrypto.decrypt(request.jsonrequest.get('encrypt'))
         if safe_eval(msg).get('EventType') != 'check_url':
-            print safe_eval(msg), "============"
             ding_rows.handler_map().get(safe_eval(msg).get('EventType'), None)(safe_eval(msg))
         signature_get, timestamp_get, nonce_get = request.httprequest.args.get('signature'),\
                                       request.httprequest.args.get('timestamp'), request.httprequest.args.get('nonce')
@@ -160,6 +155,7 @@ class PageShow(http.Controller):
             'nonce': nonce_get,
             'encrypt': encrypt
         }
+        print script_response
         return script_response
 
     def get_filed_value(self, cr, uid, onefield, context=None):
