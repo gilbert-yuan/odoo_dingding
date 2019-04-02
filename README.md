@@ -1,3 +1,4 @@
+![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)
 # odoo_dingding（最新支持11.0）
 即将实现功能
 ```
